@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> ترجمات الخطب </title>
+    <title> فيصل جميل </title>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff;
+      color: #333;
+      text-align: center;
+      padding: 2rem;
+      direction: rtl;
+    }
+    h1 {
+      color: #036666;
+      margin-bottom: 1.5rem;
+    }
+    .language {
+      margin: 1rem auto;
+      background: #f9f9f9;
+      padding: 1rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      max-width: 520px;
+      border: 1px solid #e1e1e1;
+    }
+    audio, iframe {
+      width: 100%;
+      margin-top: 0.5rem;
+      border-radius: 8px;
+    }
+    .countdown {
+      font-size: 1.2rem;
+      color: #0a9396;
+      margin-bottom: 1rem;
+    }
+    select, button {
+      padding: 0.6rem 1.2rem;
+      margin-top: 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      background-color: #ffffff;
+      color: #036666;
+    }
+    button:hover {
+      background-color: #e0f2f1;
+    }
+    .hidden {
+      display: none;
+    }
+    #notificationToggle {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>ترجمات الخطبة المباشرة</h1>
+    <h1> فيصل جميل</h1>
+
+  <div class="countdown" id="countdown">يتم التحميل...</div>
+
+  <label for="languageSelect">اختر لغتك المفضلة:</label>
+  <select id="languageSelect">
+    <option value="">-- اختر لغة --</option>
+    <option value="ar">🇸🇦 العربية</option>
+    <option value="en">🇬🇧 English</option>
+    <option value="fr">🇫🇷 Français</option>
+  </select>
+
+  <button id="notificationToggle">🔔 تفعيل الإشعارات</button>
+
+  <div class="language hidden" id="player-ar">
+    <h3>🇸🇦 العربية</h3>
+    <audio id="audio-ar" controls src="audios/arabic.mp3"></audio>
+  </div>
+
+  <div class="language hidden" id="player-en">
+    <h3>🇬🇧 English</h3>
+    <audio id="audio-en" controls src="audios/english.mp3"></audio>
+  </div>
+
+  <div class="language hidden" id="player-fr">
+    <h3>🇫🇷 Français</h3>
+    <audio id="audio-fr" controls src="audios/french.mp3"></audio>
+  </div>
+
+  <div style="margin-top:2rem;">
+    <h3>📺 البث المرئي المباشر</h3>
+    <iframe width="100%" height="315" src="https://www.youtube.com/embed/live_stream?channel=YOUR_CHANNEL_ID" frameborder="0" allowfullscreen></iframe>
+  </div>
+
+  <script>
+    const startTime = "12:33:00"; // توقيت الخطبة المحلي
+    const remindBefore = 5 * 60 * 1000; // تذكير قبل 5 دقائق
+    let reminded = false;
+
+    const audioMap = {
+      'ar': 'audio-ar',
+      'en': 'audio-en',
+      'fr': 'audio-fr',
+    };
+
+    const playerMap = {
+      'ar': 'player-ar',
+      'en': 'player-en',
+      'fr': 'player-fr',
+    };
+
+    const languageSelect = document.getElementById('languageSelect');
+    const selectedLanguage = localStorage.getItem('preferredLanguage');
+
+    if (selectedLanguage) {
+      languageSelect.value = selectedLanguage;
+      showPlayer(selectedLanguage);
+    }
+
+    languageSelect.addEventListener('change', function() {
+      const lang = this.value;
+      localStorage.setItem('preferredLanguage', lang);
+      showPlayer(lang);
+    });
+
+    function showPlayer(lang) {
+      Object.values(playerMap).forEach(id => document.getElementById(id).classList.add('hidden'));
+      if (playerMap[lang]) {
+        document.getElementById(playerMap[lang]).classList.remove('hidden');
+      }
+    }
+
+    function getTimeRemaining(startTime) {
+      const now = new Date();
+      const today = new Date();
+      const [hours, minutes, seconds] = startTime.split(":" ).map(Number);
+      const target = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, seconds);
+      return target - now;
+    }
+
+    function updateCountdown() {
+      const countdownEl = document.getElementById("countdown");
+      const diff = getTimeRemaining(startTime);
+
+      if (diff <= 0) {
+        countdownEl.textContent = "بدأ البث!";
+        const lang = languageSelect.value || selectedLanguage;
+        if (lang && audioMap[lang]) {
+          document.getElementById(audioMap[lang]).play();
+        }
+        sendNotification("📢 بدأ البث المباشر للخطبة الآن!");
+      } else {
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        countdownEl.textContent = `يتبقى ${minutes} دقيقة و${seconds} ثانية لبدء البث`;
+
+        if (!reminded && diff <= remindBefore) {
+          reminded = true;
+          sendNotification("⏰ تذكير: تبقى أقل من 5 دقائق على بدء الخطبة.");
+        }
+
+        setTimeout(updateCountdown, 1000);
+      }
+    }
+
+    updateCountdown();
+
+    document.getElementById("notificationToggle").addEventListener("click", function() {
+      Notification.requestPermission().then(function(result) {
+        if (result === 'granted') {
+          alert("✅ تم تفعيل الإشعارات بنجاح!");
+        } else {
+          alert("⚠️ لم يتم تفعيل الإشعارات.");
+        }
+      });
+    });
+
+    function sendNotification(message) {
+      if (Notification.permission === 'granted') {
+        new Notification(message);
+      }
+    }
+
+    const audioElements = Object.values(audioMap).map(id => document.getElementById(id));
+    audioElements.forEach(audio => {
+      audio.addEventListener('play', () => {
+        audioElements.forEach(other => {
+          if (other !== audio) {
+            other.pause();
+            other.currentTime = 0;
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
